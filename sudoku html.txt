@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Game</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        .sudoku-grid {
+            border-collapse: collapse;
+        }
+        .sudoku-grid td {
+            border: 1px solid black;
+            width: 40px;
+            height: 40px;
+            text-align: center;
+        }
+        .sudoku-grid td input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Sudoku Game</h1>
+        <button class="btn btn-primary" id="generate-puzzle-btn">Generate New Puzzle</button>
+        <button class="btn btn-success" id="solve-puzzle-btn">Solve Puzzle</button>
+        <button class="btn btn-danger" id="clear-grid-btn">Clear Grid</button>
+        <table class="sudoku-grid mt-3">
+            <tbody id="sudoku-grid-body">
+                <!-- Grid will be generated dynamically -->
+            </tbody>
+        </table>
+        <div class="modal fade" id="puzzle-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New Puzzle</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Generating new puzzle...</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script>
+        // Generate Sudoku grid dynamically
+        const gridBody = document.getElementById('sudoku-grid-body');
+        for (let i = 0; i < 9; i++) {
+            const row = document.createElement('tr');
+            for (let j = 0; j < 9; j++) {
+                const cell = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = 1;
+                input.max = 9;
+                cell.appendChild(input);
+                row.appendChild(cell);
+            }
+            gridBody.appendChild(row);
+        }
+
+        // Generate new puzzle
+        const generatePuzzleBtn = document.getElementById('generate-puzzle-btn');
+        generatePuzzleBtn.addEventListener('click', () => {
+            // Show modal
+            $('#puzzle-modal').modal('show');
+            // Generate random puzzle
+            const puzzle = generateRandomPuzzle();
+            // Fill grid with puzzle
+            fillGridWithPuzzle(puzzle);
+        });
+
+        // Solve puzzle
+        const solvePuzzleBtn = document.getElementById('solve-puzzle-btn');
+        solvePuzzleBtn.addEventListener('click', () => {
+            // Get current grid state
+            const gridState = getGridState();
+            // Solve puzzle using backtracking
+            const solution = solvePuzzleUsingBacktracking(gridState);
+            // Fill grid with solution
+            fillGridWithPuzzle(solution);
+        });
+
+        // Clear grid
+        const clearGridBtn = document.getElementById('clear-grid-btn');
+        clearGridBtn.addEventListener('click', () => {
+            // Clear grid
+            clearGrid();
+        });
+
+        // Validate user input
+        gridBody.addEventListener('input', (e) => {
+            if (e.target.type === 'number') {
+                const value = parseInt(e.target.value);
+                const row = e.target.parentNode.parentNode.rowIndex;
+                const col = e.target.parentNode.cellIndex;
+                if (!isValidMove(gridBody, row, col, value)) {
+                    e.target.value = '';
+                }
+            }
+        });
+
+        // Helper functions
+        function generateRandomPuzzle() {
+            // Generate random puzzle using algorithm
+            const puzzle = [];
+            for (let i = 0; i < 9; i++) {
+                puzzle[i] = [];
+                for (let j = 0; j < 9; j++) {
+                    puzzle[i][j] = Math.floor(Math.random() * 9) + 1;
+                }
+            }
+            return puzzle;
+        }
+
+        function fillGridWithPuzzle(puzzle) {
+            // Fill grid with puzzle
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const input = gridBody.rows[i].cells[j].querySelector('input');
+                    input.value = puzzle[i][j];
+                }
+            }
+        }
+
+        function getGridState() {
+            // Get current grid state
+            const gridState = [];
+            for (let i = 0; i < 9; i++) {
+                gridState[i] = [];
+                for (let j = 0; j < 9; j++) {
+                    const input = gridBody.rows[i].cells[j].querySelector('input');
+                    gridState[i][j] = parseInt(input.value) || 0;
+                }
+            }
+            return gridState;
+        }
+
+        function solvePuzzleUsingBacktracking(gridState) {
+            // Solve puzzle using backtracking algorithm
+            function isValidMove(grid, row, col, value) {
+                // Check if move is valid
+                for (let i = 0; i < 9; i++) {
+                    if (grid[row][i] === value) return false;
+                }
+                for (let i = 0; i < 9; i++) {
+                    if (grid[i][col] === value) return false;
+                }
+                const subGridRow = Math.floor(row / 3) * 3;
+                const subGridCol = Math.floor(col / 3) * 3;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (grid[subGridRow + i][subGridCol + j] === value) return false;
+                    }
+                }
+                return true;
+            }
+
+            function solvePuzzle(grid) {
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        if (grid[i][j] === 0) {
+                            for (let value = 1; value <= 9; value++) {
+                                if (isValidMove(grid, i, j, value)) {
+                                    grid[i][j] = value;
+                                    if (solvePuzzle(grid)) return true;
+                                    grid[i][j] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            const solution = gridState.slice();
+            solvePuzzle(solution);
+            return solution;
+        }
+
+        function clearGrid() {
+            // Clear grid
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const input = gridBody.rows[i].cells[j].querySelector('input');
+                    input.value = '';
+                }
+            }
+        }
+
+        function isValidMove(grid, row, col, value) {
+            // Check if move is valid
+            for (let i = 0; i < 9; i++) {
+                if (parseInt(grid.rows[row].cells[i].querySelector('input').value) === value) return false;
+            }
+            for (let i = 0; i < 9; i++) {
+                if (parseInt(grid.rows[i].cells[col].querySelector('input').value) === value) return false;
+            }
+            const subGridRow = Math.floor(row / 3) * 3;
+            const subGridCol = Math.floor(col / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (parseInt(grid.rows[subGridRow + i].cells[subGridCol + j].querySelector('input').value) === value) return false;
+                }
+            }
+            return true;
+        }
+    </script>
+</body>
+</html>
